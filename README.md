@@ -22,6 +22,8 @@ public class Main {
                 .withFlag('v', "verbose", "enable extra logging")
                 .build();
         
+        arguments.printUsage(System.out);
+
         Argumentz.Match match = arguments.match(args);
         
         String user = match.get("user");
@@ -55,6 +57,8 @@ verbose=true
 ```shell script
 # Use default values for 'user' and 'port'
 $ java -cp <...> Main -s 60 -h localhost -v
+<usage>
+
 user=guest
 port=8080
 host=localhost
