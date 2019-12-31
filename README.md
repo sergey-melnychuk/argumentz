@@ -5,7 +5,7 @@ Command-line arguments parser in Java. Small, simple and flexible.
 # Example
 
 ```java
-import io.github.sergeymelnychuk.Argumentz;
+import io.github.sergey_melnychuk.Argumentz;
 
 public class Main { 
     public static void main(String args[]) {
@@ -71,6 +71,6 @@ verbose=true
 $ java -cp <...> Main -u admin -p 9000 -s 60
 <usage>
 Exception in thread "main" java.lang.IllegalArgumentException: Missing required parameter: "-h" / "--host"
-	at io.github.sergeymelnychuk.Argumentz.match(Argumentz.java:73)
+	at io.github.sergey_melnychuk.Argumentz.match(Argumentz.java:73)
 	at Main.main(Main.java:15)
 ```

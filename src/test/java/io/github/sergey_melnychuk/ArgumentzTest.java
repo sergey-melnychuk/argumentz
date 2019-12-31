@@ -1,4 +1,4 @@
-package io.github.sergeymelnychuk;
+package io.github.sergey_melnychuk;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;

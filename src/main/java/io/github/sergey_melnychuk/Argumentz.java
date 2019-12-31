@@ -1,4 +1,4 @@
-package io.github.sergeymelnychuk;
+package io.github.sergey_melnychuk;
 
 import java.io.PrintStream;
 import java.util.HashMap;
