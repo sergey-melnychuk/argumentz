@@ -14,7 +14,7 @@ public class Argumentz {
     public interface Builder {
         <T> Builder withParam(char chr, String name, String desc, Function<String, T> mapper, Supplier<T> defaultValue);
         <T> Builder withParam(char chr, String name, String desc, Function<String, T> mapper);
-        Builder withParam(char chr, String name, String desc, String defaultValue);
+        Builder withParam(char chr, String name, String desc, Supplier<String> defaultValue);
         Builder withParam(char chr, String name, String desc);
         Builder withFlag(char chr, String name, String desc);
         Argumentz build();
@@ -177,10 +177,10 @@ public class Argumentz {
             }
 
             @Override
-            public Builder withParam(char chr, String name, String desc, String defaultValue) {
+            public Builder withParam(char chr, String name, String desc, Supplier<String> defaultValue) {
                 bindGetter(chr, name, desc, s -> {
                     if (s == null) {
-                        return defaultValue;
+                        return defaultValue.get();
                     } else {
                         return s;
                     }

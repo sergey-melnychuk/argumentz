@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 public class ArgumentzTest {
 
     Argumentz arguments = Argumentz.builder()
-            .withParam('u', "user", "username to connect to the server", "guest")
+            .withParam('u', "user", "username to connect to the server", () -> "guest")
             .withParam('p', "port", "port for server to listen", Integer::parseInt, () -> 8080)
             .withParam('s', "seconds", "timeout in seconds", Integer::parseInt)
             .withParam('h', "host", "host for client to connect to")
