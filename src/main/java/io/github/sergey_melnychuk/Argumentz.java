@@ -154,10 +154,16 @@ public class Argumentz {
             @Override
             public <T> Builder withParam(char chr, String name, String desc, Function<String, T> mapper, Supplier<T> defaultValue) {
                 bindGetter(chr, name, desc, s -> {
+                    if (s == null) {
+                        // Value is missing - provide default one
+                        return defaultValue.get();
+                    }
                     try {
                         return mapper.apply(s);
                     } catch (IllegalArgumentException e) {
-                        return defaultValue.get();
+                        // Value is provided but illegal - throw exception
+                        throw new IllegalArgumentException("Failed to resolve parameter: \"" +
+                                prefixed(chr) + "\" / \"" + prefixed(name) + "\": " + e.getMessage());
                     }
                 });
                 return this;
@@ -169,8 +175,8 @@ public class Argumentz {
                     try {
                         return mapper.apply(s);
                     } catch (IllegalArgumentException e) {
-                        throw new RuntimeException("Failed to resolve parameter: \"" +
-                                prefixed(chr) + "\" / \"" + prefixed(name) + "\"", e);
+                        throw new IllegalArgumentException("Failed to resolve parameter: \"" +
+                                prefixed(chr) + "\" / \"" + prefixed(name) + "\": " + e.getMessage());
                     }
                 });
                 return this;
