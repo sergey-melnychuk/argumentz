@@ -1,3 +1,5 @@
+![](https://github.com/sergey-melnychuk/argumentz/workflows/Java%20CI/badge.svg)
+
 # Argumentz
 
 Command-line arguments parser in Java. Small, simple and flexible.
