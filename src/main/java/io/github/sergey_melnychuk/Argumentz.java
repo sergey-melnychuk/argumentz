@@ -4,6 +4,7 @@ import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -151,46 +152,33 @@ public class Argumentz {
                 flags.add(prefixed(name));
             }
 
+            private <T> T applyOrThrow(String value, char chr, String name, Function<String, T> mapper) {
+                try {
+                    return mapper.apply(value);
+                } catch (IllegalArgumentException e) {
+                    throw new IllegalArgumentException("Failed to resolve parameter: \"" +
+                            prefixed(chr) + "\" / \"" + prefixed(name) + "\": " + e.getMessage());
+                }
+            }
+
             @Override
             public <T> Builder withParam(char chr, String name, String desc, Function<String, T> mapper, Supplier<T> defaultValue) {
-                bindGetter(chr, name, desc, s -> {
-                    if (s == null) {
-                        // Value is missing - provide default one
-                        return defaultValue.get();
-                    }
-                    try {
-                        return mapper.apply(s);
-                    } catch (IllegalArgumentException e) {
-                        // Value is provided but illegal - throw exception
-                        throw new IllegalArgumentException("Failed to resolve parameter: \"" +
-                                prefixed(chr) + "\" / \"" + prefixed(name) + "\": " + e.getMessage());
-                    }
-                });
+                bindGetter(chr, name, desc,
+                        value -> Optional.ofNullable(value)
+                            .map(v -> applyOrThrow(v, chr, name, mapper))
+                            .orElseGet(defaultValue));
                 return this;
             }
 
             @Override
             public <T> Builder withParam(char chr, String name, String desc, Function<String, T> mapper) {
-                bindGetter(chr, name, desc, s -> {
-                    try {
-                        return mapper.apply(s);
-                    } catch (IllegalArgumentException e) {
-                        throw new IllegalArgumentException("Failed to resolve parameter: \"" +
-                                prefixed(chr) + "\" / \"" + prefixed(name) + "\": " + e.getMessage());
-                    }
-                });
+                bindGetter(chr, name, desc, value -> applyOrThrow(value, chr, name, mapper));
                 return this;
             }
 
             @Override
             public Builder withParam(char chr, String name, String desc, Supplier<String> defaultValue) {
-                bindGetter(chr, name, desc, s -> {
-                    if (s == null) {
-                        return defaultValue.get();
-                    } else {
-                        return s;
-                    }
-                });
+                bindGetter(chr, name, desc, value -> Optional.ofNullable(value).orElseGet(defaultValue));
                 return this;
             }
 
