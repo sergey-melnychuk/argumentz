@@ -30,6 +30,24 @@ public class ArgumentzTest {
     }
 
     @Test
+    void testInvalidIntegerDefaultArgument() {
+        String[] args = {"-u", "admin", "-p", "PORT_NUMBER", "-s", "3600", "-h", "localhost", "-v"};
+
+        assertThatThrownBy(() -> arguments.match(args))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Failed to resolve parameter: \"-p\" / \"--port\": For input string: \"PORT_NUMBER\"");
+    }
+
+    @Test
+    void testInvalidIntegerRequiredArgument() {
+        String[] args = {"-u", "admin", "-p", "9000", "-s", "SECONDS", "-h", "localhost", "-v"};
+
+        assertThatThrownBy(() -> arguments.match(args))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Failed to resolve parameter: \"-s\" / \"--seconds\": For input string: \"SECONDS\"");
+    }
+
+    @Test
     void testDefaultValue() {
         String[] args = {"-p", "9000", "-s", "3600", "-h", "localhost", "-v"};
         Argumentz.Match match = arguments.match(args);
