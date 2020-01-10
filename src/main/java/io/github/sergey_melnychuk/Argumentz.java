@@ -26,6 +26,7 @@ public class Argumentz {
         String get(String name);
         Integer getInt(String name);
         boolean getFlag(String name);
+        <T> T getAs(Class<T> clazz, String name);
     }
 
     private final Map<String, String> names;
@@ -70,8 +71,9 @@ public class Argumentz {
                 if (value != null) {
                     values.put(mapper.getKey(), value);
                 } else {
-                    throw new IllegalArgumentException("Missing required parameter: \"" +
-                            mapper.getKey() + "\" / \"" + names.get(mapper.getKey()) + "\"");
+                    String message = "Missing required parameter: \"" +
+                            mapper.getKey() + "\" / \"" + names.get(mapper.getKey()) + "\"";
+                    throw new IllegalArgumentException(message);
                 }
             }
         }
@@ -85,22 +87,33 @@ public class Argumentz {
             }
             @Override
             public Map<String, Object> all() {
-                return all;
+                return new HashMap<>(all);
             }
 
             @Override
             public String get(String name) {
-                return (String) values.get(prefixed(name));
+                return getAs(String.class, name);
             }
 
             @Override
             public Integer getInt(String name) {
-                return (Integer) values.get(prefixed(name));
+                return getAs(Integer.class, name);
             }
 
             @Override
             public boolean getFlag(String name) {
                 return enabled.contains(prefixed(name));
+            }
+
+            @Override
+            public <T> T getAs(Class<T> clazz, String name) {
+                Object value = values.get(prefixed(name));
+                try {
+                    return clazz.cast(value);
+                } catch (ClassCastException e) {
+                    String message = "Failed to cast value '" + value + "' to class '" + clazz.getSimpleName() + "'.";
+                    throw new IllegalArgumentException(message, e);
+                }
             }
         };
     }
