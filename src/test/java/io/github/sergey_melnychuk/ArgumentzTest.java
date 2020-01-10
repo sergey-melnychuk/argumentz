@@ -2,6 +2,7 @@ package io.github.sergey_melnychuk;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -9,17 +10,20 @@ import org.junit.jupiter.api.Test;
 
 public class ArgumentzTest {
 
-    Argumentz arguments = Argumentz.builder()
-            .withParam('u', "user", "username to connect to the server", () -> "guest")
-            .withParam('p', "port", "port for server to listen", Integer::parseInt, () -> 8080)
-            .withParam('s', "seconds", "timeout in seconds", Integer::parseInt)
-            .withParam('h', "host", "host for client to connect to")
-            .withFlag('v', "verbose", "enable extra logging")
-            .build();
+    private static Argumentz makeArgumentz() {
+        return Argumentz.builder()
+                .withParam('u', "user", "username to connect to the server", () -> "guest")
+                .withParam('p', "port", "port for server to listen", Integer::parseInt, () -> 8080)
+                .withParam('s', "seconds", "timeout in seconds", Integer::parseInt)
+                .withParam('h', "host", "host for client to connect to")
+                .withFlag('v', "verbose", "enable extra logging")
+                .build();
+    }
 
     @Test
     void testFullArguments() {
         String[] args = {"-u", "admin", "-p", "9000", "-s", "3600", "-h", "localhost", "-v"};
+        Argumentz arguments = makeArgumentz();
         Argumentz.Match match = arguments.match(args);
 
         assertThat(match.get("user")).isEqualTo("admin");
@@ -33,6 +37,7 @@ public class ArgumentzTest {
     void testInvalidIntegerDefaultArgument() {
         String[] args = {"-u", "admin", "-p", "PORT_NUMBER", "-s", "3600", "-h", "localhost", "-v"};
 
+        Argumentz arguments = makeArgumentz();
         assertThatThrownBy(() -> arguments.match(args))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Failed to resolve parameter: \"-p\" / \"--port\": For input string: \"PORT_NUMBER\"");
@@ -42,6 +47,7 @@ public class ArgumentzTest {
     void testInvalidIntegerRequiredArgument() {
         String[] args = {"-u", "admin", "-p", "9000", "-s", "SECONDS", "-h", "localhost", "-v"};
 
+        Argumentz arguments = makeArgumentz();
         assertThatThrownBy(() -> arguments.match(args))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Failed to resolve parameter: \"-s\" / \"--seconds\": For input string: \"SECONDS\"");
@@ -50,6 +56,7 @@ public class ArgumentzTest {
     @Test
     void testDefaultValue() {
         String[] args = {"-p", "9000", "-s", "3600", "-h", "localhost", "-v"};
+        Argumentz arguments = makeArgumentz();
         Argumentz.Match match = arguments.match(args);
 
         assertThat(match.get("user")).isEqualTo("guest");
@@ -62,6 +69,7 @@ public class ArgumentzTest {
     @Test
     void testDefaultMappedValue() {
         String[] args = {"-u", "admin", "-s", "3600", "-h", "localhost", "-v"};
+        Argumentz arguments = makeArgumentz();
         Argumentz.Match match = arguments.match(args);
 
         assertThat(match.get("user")).isEqualTo("admin");
@@ -74,6 +82,7 @@ public class ArgumentzTest {
     @Test
     void testFlagDisabled() {
         String[] args = {"-u", "admin", "-p", "9000", "-s", "3600", "-h", "localhost"};
+        Argumentz arguments = makeArgumentz();
         Argumentz.Match match = arguments.match(args);
 
         assertThat(match.get("user")).isEqualTo("admin");
@@ -86,6 +95,7 @@ public class ArgumentzTest {
     @Test
     void testMissingRequiredArgument() {
         String[] args = {"-s", "3600"};
+        Argumentz arguments = makeArgumentz();
         assertThatThrownBy(() -> arguments.match(args))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Missing required parameter: \"-h\" / \"--host\"");
@@ -95,6 +105,7 @@ public class ArgumentzTest {
     void testUsageMessage() {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         PrintStream ps = new PrintStream(baos);
+        Argumentz arguments = makeArgumentz();
         arguments.printUsage(ps);
 
         assertThat(baos.toString()).isEqualTo("Usage: java -cp <...> <MainClass> [ARGUMENTS]\n" +
@@ -108,6 +119,7 @@ public class ArgumentzTest {
     @Test
     void testAllContents() {
         String[] args = {"-u", "admin", "-p", "9000", "-s", "3600", "-h", "localhost", "-v"};
+        Argumentz arguments = makeArgumentz();
         Argumentz.Match match = arguments.match(args);
 
         assertThat(match.all()).containsOnly(
@@ -116,5 +128,103 @@ public class ArgumentzTest {
                 entry("-s", 3600), entry("--seconds", 3600),
                 entry("-h", "localhost"), entry("--host", "localhost"),
                 entry("-v", true), entry("--verbose", true));
+    }
+
+    // Example of a part of a complex argument Param
+    private static class Range {
+        private final long lo;
+        private final long hi;
+
+        private Range(long lo, long hi) {
+            this.lo = lo;
+            this.hi = hi;
+        }
+
+        public static Range of(long lo, long hi) {
+            return new Range(lo, hi);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Range range = (Range) o;
+            return lo == range.lo && hi == range.hi;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(lo, hi);
+        }
+
+        @Override
+        public String toString() {
+            return "Range{lo=" + lo + ", hi=" + hi + '}';
+        }
+
+        static Range parse(String s) {
+            String[] chunks = s.split("/");
+            return new Range(Long.parseLong(chunks[0]), Long.parseLong(chunks[1]));
+        }
+    }
+
+    // Example of a complex argument
+    private static class Param {
+        private final Map<String, List<Range>> map;
+
+        public Param(Map<String, List<Range>> map) {
+            this.map = map;
+        }
+
+        static Param parse(String str) {
+            Map<String, List<Range>> map = new HashMap<>();
+            for (String kv : str.split(";")) {
+                String[] entries = kv.split("=");
+                String name = entries[0];
+                List<Range> ranges = new ArrayList<>();
+                for (String r : entries[1].split(",")) {
+                    Range range = Range.parse(r);
+                    ranges.add(range);
+                }
+                map.put(name, ranges);
+            }
+            return new Param(map);
+        }
+
+        @Override
+        public String toString() {
+            return "Param{map=" + map + '}';
+        }
+    }
+
+
+    @Test
+    void testGenericParameterGetter() {
+        Argumentz args = Argumentz.builder()
+                .withParam('p', "param", "Some tricky parameter", Param::parse, Collections::emptyMap)
+                .build();
+
+        Argumentz.Match match = args.match(new String[]{"--param", "abc=123/456,789/012;def=777/333,999/222"});
+
+        Param param = match.getAs(Param.class,"param");
+
+        assertThat(param.map).containsOnly(
+                entry("abc", Arrays.asList(Range.of(123L, 456L), Range.of(789L, 12L))),
+                entry("def", Arrays.asList(Range.of(777L, 333L), Range.of(999L, 222L))));
+    }
+
+    @Test
+    void testGenericParameterGetterFails() {
+        Argumentz args = Argumentz.builder()
+                .withParam('p', "param", "Some tricky parameter",
+                        Param::parse, () -> new Param(new HashMap<>()))
+                .build();
+
+        Argumentz.Match match = args.match(new String[]{"--param", "abc=123/456,789/012;def=777/333,999/222"});
+
+        assertThatThrownBy(() -> match.getAs(Integer.class, "param"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Failed to cast value 'Param{map={abc=[Range{lo=123, hi=456}, Range{lo=789, hi=12}], " +
+                        "def=[Range{lo=777, hi=333}, Range{lo=999, hi=222}]}}' to class 'Integer'.");
     }
 }
