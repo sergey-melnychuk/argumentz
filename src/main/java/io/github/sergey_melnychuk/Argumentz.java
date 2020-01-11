@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -18,6 +19,7 @@ public class Argumentz {
         Builder withParam(char chr, String name, String desc, Supplier<String> defaultValue);
         Builder withParam(char chr, String name, String desc);
         Builder withFlag(char chr, String name, String desc);
+        Builder withErrorHandler(BiConsumer<RuntimeException, Argumentz> errorHandler);
         Argumentz build();
     }
 
@@ -33,15 +35,18 @@ public class Argumentz {
     private final Map<String, Function<String, ?>> mappers;
     private final Set<String> flags;
     private final String usage;
+    private final BiConsumer<RuntimeException, Argumentz> errorHandler;
 
     public Argumentz(Map<String, String> names,
                   Map<String, Function<String, ?>> mappers,
                   Set<String> flags,
-                  String usage) {
+                  String usage,
+                  BiConsumer<RuntimeException, Argumentz> errorHandler) {
         this.names = names;
         this.mappers = mappers;
         this.flags = flags;
         this.usage = usage;
+        this.errorHandler = errorHandler;
     }
 
     public Match match(String[] args) {
@@ -59,21 +64,38 @@ public class Argumentz {
             if (mappers.containsKey(name) && i < args.length - 1) {
                 i ++;
                 String input = args[i];
-                Object value = mappers.get(name).apply(input);
-                values.put(name, value);
-                values.put(names.get(name), value);
+                try {
+                    Object value = mappers.get(name).apply(input);
+                    values.put(name, value);
+                    values.put(names.get(name), value);
+                } catch (IllegalArgumentException e) {
+                    errorHandler.accept(e, Argumentz.this);
+                    throw new IllegalStateException("Error handler did not terminate execution flow of `match`.");
+                }
             }
         }
 
         for (Map.Entry<String, Function<String, ?>> mapper : mappers.entrySet()) {
             if (!values.containsKey(mapper.getKey())) {
-                Object value = mapper.getValue().apply(null);
-                if (value != null) {
-                    values.put(mapper.getKey(), value);
-                } else {
-                    String message = "Missing required parameter: \"" +
-                            mapper.getKey() + "\" / \"" + names.get(mapper.getKey()) + "\"";
-                    throw new IllegalArgumentException(message);
+                try {
+                    Object value = mapper.getValue().apply(null);
+                    if (value != null) {
+                        values.put(mapper.getKey(), value);
+                    } else {
+                        String chr = mapper.getKey();
+                        String str = names.get(mapper.getKey());
+                        if (chr.length() > str.length()) {
+                            String tmp = str;
+                            str = chr;
+                            chr = tmp;
+                        }
+                        String message = "Missing required parameter: \"" + chr + "\" / \"" + str + "\"";
+                        errorHandler.accept(new IllegalArgumentException(message), Argumentz.this);
+                        throw new IllegalStateException("Error handler did not terminate execution flow of `match`.");
+                    }
+                } catch (IllegalArgumentException e) {
+                    errorHandler.accept(e, Argumentz.this);
+                    throw new IllegalStateException("Error handler did not terminate execution flow of `match`.");
                 }
             }
         }
@@ -112,7 +134,8 @@ public class Argumentz {
                     return clazz.cast(value);
                 } catch (ClassCastException e) {
                     String message = "Failed to cast value '" + value + "' to class '" + clazz.getSimpleName() + "'.";
-                    throw new IllegalArgumentException(message, e);
+                    errorHandler.accept(new IllegalArgumentException(message, e), Argumentz.this);
+                    throw new IllegalStateException("Error handler did not terminate execution flow of `getAs`.");
                 }
             }
         };
@@ -124,6 +147,7 @@ public class Argumentz {
             private Map<String, Function<String, ?>> getters = new HashMap<>();
             private Map<String, String> names = new HashMap<>();
             private StringBuilder sb = new StringBuilder();
+            private BiConsumer<RuntimeException, Argumentz> errorHandler = (e, a) -> { throw e; };
 
             private void bindNames(char chr, String name) {
                 names.put(prefixed(chr), prefixed(name));
@@ -166,11 +190,16 @@ public class Argumentz {
             }
 
             private <T> T applyOrThrow(String value, char chr, String name, Function<String, T> mapper) {
+                if (value == null) {
+                    String message = "Missing required parameter: \"" + prefixed(chr) + "\" / \"" + prefixed(name) + "\"";
+                    throw new IllegalArgumentException(message);
+                }
                 try {
                     return mapper.apply(value);
                 } catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("Failed to resolve parameter: \"" +
-                            prefixed(chr) + "\" / \"" + prefixed(name) + "\": " + e.getMessage());
+                    String message = "Failed to resolve parameter: \"" +
+                            prefixed(chr) + "\" / \"" + prefixed(name) + "\": " + e.getMessage();
+                    throw new IllegalArgumentException(message, e);
                 }
             }
 
@@ -208,8 +237,14 @@ public class Argumentz {
             }
 
             @Override
+            public Builder withErrorHandler(BiConsumer<RuntimeException, Argumentz> errorHandler) {
+                this.errorHandler = errorHandler;
+                return this;
+            }
+
+            @Override
             public Argumentz build() {
-                return new Argumentz(names, getters, flags, sb.toString());
+                return new Argumentz(names, getters, flags, sb.toString(), errorHandler);
             }
         };
     }
