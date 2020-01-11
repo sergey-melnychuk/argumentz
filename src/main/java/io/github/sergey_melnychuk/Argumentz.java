@@ -1,11 +1,7 @@
 package io.github.sergey_melnychuk;
 
 import java.io.PrintStream;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -50,6 +46,15 @@ public class Argumentz {
     }
 
     public Match match(String[] args) {
+        long depth = Arrays.stream(Thread.currentThread().getStackTrace())
+                .map(StackTraceElement::toString)
+                .filter(s -> s.contains("io.github.sergey_melnychuk.Argumentz.match"))
+                .count();
+
+        if (depth > 1) {
+            throw new IllegalStateException("Infinite recursive call to Argumentz.match detected.");
+        }
+
         final Map<String, Object> values = new HashMap<>();
         final Set<String> enabled = new HashSet<>();
 

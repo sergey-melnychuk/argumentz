@@ -339,4 +339,20 @@ public class ArgumentzTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Error handler did not terminate execution flow of `match`.");
     }
+
+    @Test
+    void testInfiniteRecursiveMathcIsDetected() {
+        final String[] args = new String[] {"--message", "hello"};
+
+        Argumentz argumentz = Argumentz.builder()
+                .withParam('m', "match", "some description")
+                .withErrorHandler((e, a) -> {
+                    a.match(args);
+                })
+                .build();
+
+        assertThatThrownBy(() -> argumentz.match(args))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Infinite recursive call to Argumentz.match detected.");
+    }
 }
