@@ -201,7 +201,8 @@ public class ArgumentzTest {
     @Test
     void testGenericParameterGetter() {
         Argumentz args = Argumentz.builder()
-                .withParam('p', "param", "Some tricky parameter", Param::parse, Collections::emptyMap)
+                .withParam('p', "param", "Some tricky parameter",
+                        Param::parse, () -> new Param(new HashMap<>()))
                 .build();
 
         Argumentz.Match match = args.match(new String[]{"--param", "abc=123/456,789/012;def=777/333,999/222"});
@@ -226,5 +227,116 @@ public class ArgumentzTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Failed to cast value 'Param{map={abc=[Range{lo=123, hi=456}, Range{lo=789, hi=12}], " +
                         "def=[Range{lo=777, hi=333}, Range{lo=999, hi=222}]}}' to class 'Integer'.");
+    }
+
+    @Test
+    void testNonTerminalErrorHandlerWithFailingGenericParameterGetter() {
+        Argumentz args = Argumentz.builder()
+                .withParam('p', "param", "Some tricky parameter",
+                        Param::parse, () -> new Param(new HashMap<>()))
+                .withErrorHandler((e, a) -> {})
+                .build();
+
+        Argumentz.Match match = args.match(new String[]{"--param", "abc=123/456,789/012;def=777/333,999/222"});
+
+        assertThatThrownBy(() -> match.getAs(Integer.class, "param"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Error handler did not terminate execution flow of `getAs`.");
+    }
+
+    static class Ref<T> { public T value; }
+
+    @Test
+    void testCustomErrorHandlerForMissingStringArgument() {
+        Ref<String> message = new Ref<>();
+
+        Argumentz args = Argumentz.builder()
+                .withParam('s', "str", "string arg")
+                .withErrorHandler((e, a) -> {
+                    message.value = e.getMessage();
+                    throw new RuntimeException("terminate-the-app");
+                })
+                .build();
+
+        assertThatThrownBy(() -> args.match(new String[] {"--name", "value"}))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("terminate-the-app");
+
+        assertThat(message.value).isEqualTo("Missing required parameter: \"-s\" / \"--str\"");
+    }
+
+    @Test
+    void testNonTerminalErrorHandlerForMissingStringArgument() {
+        Argumentz args = Argumentz.builder()
+                .withParam('s', "str", "string arg")
+                .withErrorHandler((e, a) -> {})
+                .build();
+
+        assertThatThrownBy(() -> args.match(new String[] {"--name", "value"}))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Error handler did not terminate execution flow of `match`.");
+    }
+
+    @Test
+    void testCustomErrorHandlerForMissingMappedArgument() {
+        Ref<String> message = new Ref<>();
+
+        Argumentz args = Argumentz.builder()
+                .withParam('i', "int", "integer arg", Integer::parseInt)
+                .withErrorHandler((e, a) -> {
+                    message.value = e.getMessage();
+                    throw new RuntimeException("terminate-the-app");
+                })
+                .build();
+
+        assertThatThrownBy(() -> args.match(new String[] {"--name", "value"}))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("terminate-the-app");
+
+        assertThat(message.value).isEqualTo("Missing required parameter: \"-i\" / \"--int\"");
+    }
+
+    @Test
+    void testNonTerminalErrorHandlerForMissingMappedArgument() {
+        Argumentz args = Argumentz.builder()
+                .withParam('i', "int", "integer arg", Integer::parseInt)
+                .withErrorHandler((e, a) -> {})
+                .build();
+
+        assertThatThrownBy(() -> args.match(new String[] {"--name", "value"}))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Error handler did not terminate execution flow of `match`.");
+    }
+
+    @Test
+    void testCustomErrorHandlerForInvalidMappedArgument() {
+        Ref<String> message = new Ref<>();
+
+        Argumentz args = Argumentz.builder()
+                .withParam('i', "int", "integer arg", Integer::parseInt)
+                .withErrorHandler((e, a) -> {
+                    message.value = e.getMessage();
+                    throw new RuntimeException("terminate-the-app");
+                })
+                .build();
+
+        assertThatThrownBy(() -> args.match(new String[] {"--int", "value"}))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("terminate-the-app");
+
+        assertThat(message.value)
+                .isEqualTo("Failed to resolve parameter: \"-i\" / \"--int\": For input string: \"value\"");
+    }
+
+    @Test
+    void testNonTerminalErrorHandlerForInvalidMappedArgument() {
+        Argumentz args = Argumentz.builder()
+                .withParam('i', "int", "integer arg", Integer::parseInt)
+                .withErrorHandler((e, a) -> {})
+                .build();
+
+        assertThatThrownBy(() -> args.match(new String[] {"--int", "value"}))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Error handler did not terminate execution flow of `match`.");
     }
 }
