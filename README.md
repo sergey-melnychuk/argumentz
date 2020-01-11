@@ -69,7 +69,7 @@ verbose=true
 ```shell script
 # Missing required parameter - error handler is fired
 $ java -cp <...> Main -u admin -p 9000 -s 60
-Missing required parameter: "-s" / "--seconds"
+Missing required parameter: "-h" / "--host"
 
 Usage: java -cp <...> <MainClass> [ARGUMENTS]
      -u --user          username to connect to the server (default: guest)
