@@ -4,7 +4,7 @@
 
   <groupId>io.github.sergey-melnychuk</groupId>
   <artifactId>argumentz</artifactId>
-  <version>0.3.4-SNAPSHOT</version>
+  <version>0.3.4</version>
   <packaging>jar</packaging>
 
   <name>${project.groupId}:${project.artifactId}</name>
@@ -30,6 +30,7 @@
     <connection>scm:git:git://github.com/sergey-melnychuk/argumentz.git</connection>
     <developerConnection>scm:git:git@github.com:sergey-melnychuk/argumentz.git</developerConnection>
     <url>http://github.com/sergey-melnychuk/argumentz/tree/master</url>
+    <tag>argumentz-0.3.4</tag>
   </scm>
 
   <properties>
