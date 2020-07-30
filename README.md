@@ -4,6 +4,16 @@
 
 Command-line arguments parser in Java. Small, simple and flexible.
 
+# Install
+
+```
+<dependency>
+  <groupId>io.github.sergey-melnychuk</groupId>
+  <artifactId>argumentz</artifactId>
+  <version>0.3.9</version>
+</dependency>
+```
+
 # Example
 
 ```java
