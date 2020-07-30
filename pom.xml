@@ -28,7 +28,7 @@
 
   <scm>
     <connection>scm:git:git://github.com/sergey-melnychuk/argumentz.git</connection>
-    <developerConnection>scm:git:ssh://github.com/sergey-melnychuk/argumentz.git</developerConnection>
+    <developerConnection>scm:git:git@github.com:sergey-melnychuk/argumentz.git</developerConnection>
     <url>http://github.com/sergey-melnychuk/argumentz/tree/master</url>
     <tag>argumentz-0.3.0</tag>
   </scm>
