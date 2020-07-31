@@ -90,10 +90,3 @@ Usage: java -cp <...> <MainClass> [ARGUMENTS]
      -h --host          host for client to connect to (required)
      -v --verbose       enable extra logging
 ```
-
-# Release 
-
-```
-mvn release:clean release:prepare -P release
-mvn release:perform -P release
-```
