@@ -54,7 +54,7 @@ public class Main {
         boolean verbose = match.getFlag("verbose");
         
         System.out.printf("user=%s\nport=%d\nhost=%s\nseconds=%d\nverbose=%b%n", 
-            user, port, host, seconds, verbose));
+            user, port, host, seconds, verbose);
     }
 }
 ```
