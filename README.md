@@ -40,7 +40,7 @@ public class Main {
                     System.err.println(e.getMessage() + "\n");
                     a.printUsage(System.out);
                     System.exit(1);
-                    // or just re-throw then exception
+                    // or just re-throw the exception
                     // throw e;
                 })
                 .build();
