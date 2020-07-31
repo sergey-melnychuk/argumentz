@@ -53,7 +53,7 @@ public class Main {
         int seconds = match.getInt("seconds");
         boolean verbose = match.getFlag("verbose");
         
-        System.out.println(String.format("user=%s\nport=%d\nhost=%s\nseconds=%d\nverbose=%b", 
+        System.out.printf("user=%s\nport=%d\nhost=%s\nseconds=%d\nverbose=%b%n", 
             user, port, host, seconds, verbose));
     }
 }
