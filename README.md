@@ -34,7 +34,7 @@ public class Main {
                 .withFlag('v', "verbose", "enable extra logging")
                 // Error handler to address misconfiguration - it must terminate the program (exit or exception).
                 // Argumentz won't allow proceeding with program execution after error has been detected.
-                // Argumentz also won't allow blowing up the stack by recursive call to `a.match(...)`.
+                // Argumentz also won't allow blowing up the stack by recursive call `a.match(...)`.
                 .withErrorHandler((RuntimeException e, Argumentz a) -> {
                     // print error and usage, then exit
                     System.err.println(e.getMessage() + "\n");
