@@ -191,6 +191,10 @@ public class ArgumentzTest {
             return new Param(map);
         }
 
+        static Param empty() {
+            return new Param(new HashMap<>());
+        }
+
         @Override
         public String toString() {
             return "Param{map=" + map + '}';
@@ -201,13 +205,12 @@ public class ArgumentzTest {
     @Test
     void testGenericParameterGetter() {
         Argumentz args = Argumentz.builder()
-                .withParam('p', "param", "Some tricky parameter",
-                        Param::parse, () -> new Param(new HashMap<>()))
+                .withParam('p', "param", "Some tricky parameter", Param::parse, Param::empty)
                 .build();
 
         Argumentz.Match match = args.match(new String[]{"--param", "abc=123/456,789/012;def=777/333,999/222"});
 
-        Param param = match.getAs(Param.class,"param");
+        Param param = match.getAs(Param.class, "param");
 
         assertThat(param.map).containsOnly(
                 entry("abc", Arrays.asList(Range.of(123L, 456L), Range.of(789L, 12L))),
@@ -217,8 +220,7 @@ public class ArgumentzTest {
     @Test
     void testGenericParameterGetterFails() {
         Argumentz args = Argumentz.builder()
-                .withParam('p', "param", "Some tricky parameter",
-                        Param::parse, () -> new Param(new HashMap<>()))
+                .withParam('p', "param", "Some tricky parameter", Param::parse, Param::empty)
                 .build();
 
         Argumentz.Match match = args.match(new String[]{"--param", "abc=123/456,789/012;def=777/333,999/222"});
@@ -232,9 +234,8 @@ public class ArgumentzTest {
     @Test
     void testNonTerminalErrorHandlerWithFailingGenericParameterGetter() {
         Argumentz args = Argumentz.builder()
-                .withParam('p', "param", "Some tricky parameter",
-                        Param::parse, () -> new Param(new HashMap<>()))
-                .withErrorHandler((e, a) -> {})
+                .withParam('p', "param", "Some tricky parameter", Param::parse, Param::empty)
+                .withErrorHandler((e, a) -> { /* empty */ })
                 .build();
 
         Argumentz.Match match = args.match(new String[]{"--param", "abc=123/456,789/012;def=777/333,999/222"});
@@ -244,7 +245,9 @@ public class ArgumentzTest {
                 .hasMessage("Error handler did not terminate execution flow of `getAs`.");
     }
 
-    static class Ref<T> { public T value; }
+    static class Ref<T> {
+        public T value;
+    }
 
     @Test
     void testCustomErrorHandlerForMissingStringArgument() {
@@ -258,7 +261,7 @@ public class ArgumentzTest {
                 })
                 .build();
 
-        assertThatThrownBy(() -> args.match(new String[] {"--name", "value"}))
+        assertThatThrownBy(() -> args.match(new String[]{"--name", "value"}))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("terminate-the-app");
 
@@ -269,10 +272,10 @@ public class ArgumentzTest {
     void testNonTerminalErrorHandlerForMissingStringArgument() {
         Argumentz args = Argumentz.builder()
                 .withParam('s', "str", "string arg")
-                .withErrorHandler((e, a) -> {})
+                .withErrorHandler((e, a) -> { /* empty */ })
                 .build();
 
-        assertThatThrownBy(() -> args.match(new String[] {"--name", "value"}))
+        assertThatThrownBy(() -> args.match(new String[]{"--name", "value"}))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Error handler did not terminate execution flow of `match`.");
     }
@@ -289,7 +292,7 @@ public class ArgumentzTest {
                 })
                 .build();
 
-        assertThatThrownBy(() -> args.match(new String[] {"--name", "value"}))
+        assertThatThrownBy(() -> args.match(new String[]{"--name", "value"}))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("terminate-the-app");
 
@@ -300,10 +303,10 @@ public class ArgumentzTest {
     void testNonTerminalErrorHandlerForMissingMappedArgument() {
         Argumentz args = Argumentz.builder()
                 .withParam('i', "int", "integer arg", Integer::parseInt)
-                .withErrorHandler((e, a) -> {})
+                .withErrorHandler((e, a) -> { /* empty */ })
                 .build();
 
-        assertThatThrownBy(() -> args.match(new String[] {"--name", "value"}))
+        assertThatThrownBy(() -> args.match(new String[]{"--name", "value"}))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Error handler did not terminate execution flow of `match`.");
     }
@@ -320,7 +323,7 @@ public class ArgumentzTest {
                 })
                 .build();
 
-        assertThatThrownBy(() -> args.match(new String[] {"--int", "value"}))
+        assertThatThrownBy(() -> args.match(new String[]{"--int", "value"}))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("terminate-the-app");
 
@@ -332,17 +335,17 @@ public class ArgumentzTest {
     void testNonTerminalErrorHandlerForInvalidMappedArgument() {
         Argumentz args = Argumentz.builder()
                 .withParam('i', "int", "integer arg", Integer::parseInt)
-                .withErrorHandler((e, a) -> {})
+                .withErrorHandler((e, a) -> { /* empty */ })
                 .build();
 
-        assertThatThrownBy(() -> args.match(new String[] {"--int", "value"}))
+        assertThatThrownBy(() -> args.match(new String[]{"--int", "value"}))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Error handler did not terminate execution flow of `match`.");
     }
 
     @Test
-    void testInfiniteRecursiveMathcIsDetected() {
-        final String[] args = new String[] {"--message", "hello"};
+    void testInfiniteRecursiveMatchIsDetected() {
+        final String[] args = new String[]{"--message", "hello"};
 
         Argumentz argumentz = Argumentz.builder()
                 .withParam('m', "match", "some description")

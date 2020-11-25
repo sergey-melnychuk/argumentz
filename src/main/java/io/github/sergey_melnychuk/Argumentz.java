@@ -7,23 +7,33 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class Argumentz {
-    private static final Function<String, String> IDENTITY = x -> x;
+    private static final Function<String, String> ID = x -> x;
 
     public interface Builder {
         <T> Builder withParam(char chr, String name, String desc, Function<String, T> mapper, Supplier<T> defaultValue);
+
         <T> Builder withParam(char chr, String name, String desc, Function<String, T> mapper);
+
         Builder withParam(char chr, String name, String desc, Supplier<String> defaultValue);
+
         Builder withParam(char chr, String name, String desc);
+
         Builder withFlag(char chr, String name, String desc);
+
         Builder withErrorHandler(BiConsumer<RuntimeException, Argumentz> errorHandler);
+
         Argumentz build();
     }
 
     public interface Match {
         Map<String, Object> all();
+
         String get(String name);
+
         Integer getInt(String name);
+
         boolean getFlag(String name);
+
         <T> T getAs(Class<T> clazz, String name);
     }
 
@@ -34,10 +44,10 @@ public class Argumentz {
     private final BiConsumer<RuntimeException, Argumentz> errorHandler;
 
     public Argumentz(Map<String, String> names,
-                  Map<String, Function<String, ?>> mappers,
-                  Set<String> flags,
-                  String usage,
-                  BiConsumer<RuntimeException, Argumentz> errorHandler) {
+                     Map<String, Function<String, ?>> mappers,
+                     Set<String> flags,
+                     String usage,
+                     BiConsumer<RuntimeException, Argumentz> errorHandler) {
         this.names = names;
         this.mappers = mappers;
         this.flags = flags;
@@ -67,7 +77,7 @@ public class Argumentz {
             }
 
             if (mappers.containsKey(name) && i < args.length - 1) {
-                i ++;
+                i++;
                 String input = args[i];
                 try {
                     Object value = mappers.get(name).apply(input);
@@ -107,11 +117,13 @@ public class Argumentz {
 
         return new Match() {
             private final Map<String, Object> all = new HashMap<>(values);
+
             {
                 for (String flag : flags) {
                     all.put(flag, true);
                 }
             }
+
             @Override
             public Map<String, Object> all() {
                 return new HashMap<>(all);
@@ -148,11 +160,13 @@ public class Argumentz {
 
     public static Builder builder() {
         return new Builder() {
-            private Set<String> flags = new HashSet<>();
-            private Map<String, Function<String, ?>> getters = new HashMap<>();
-            private Map<String, String> names = new HashMap<>();
-            private StringBuilder sb = new StringBuilder();
-            private BiConsumer<RuntimeException, Argumentz> errorHandler = (e, a) -> { throw e; };
+            private final Set<String> flags = new HashSet<>();
+            private final Map<String, Function<String, ?>> getters = new HashMap<>();
+            private final Map<String, String> names = new HashMap<>();
+            private final StringBuilder sb = new StringBuilder();
+            private BiConsumer<RuntimeException, Argumentz> errorHandler = (e, a) -> {
+                throw e;
+            };
 
             private void bindNames(char chr, String name) {
                 names.put(prefixed(chr), prefixed(name));
@@ -196,24 +210,26 @@ public class Argumentz {
 
             private <T> T applyOrThrow(String value, char chr, String name, Function<String, T> mapper) {
                 if (value == null) {
-                    String message = "Missing required parameter: \"" + prefixed(chr) + "\" / \"" + prefixed(name) + "\"";
-                    throw new IllegalArgumentException(message);
+                    String msg = "Missing required parameter: \"" + prefixed(chr) + "\" / \"" + prefixed(name) + "\"";
+                    throw new IllegalArgumentException(msg);
                 }
                 try {
                     return mapper.apply(value);
                 } catch (IllegalArgumentException e) {
-                    String message = "Failed to resolve parameter: \"" +
+                    String msg = "Failed to resolve parameter: \"" +
                             prefixed(chr) + "\" / \"" + prefixed(name) + "\": " + e.getMessage();
-                    throw new IllegalArgumentException(message, e);
+                    throw new IllegalArgumentException(msg, e);
                 }
             }
 
             @Override
-            public <T> Builder withParam(char chr, String name, String desc, Function<String, T> mapper, Supplier<T> defaultValue) {
+            public <T> Builder withParam(char chr, String name, String desc,
+                                         Function<String, T> mapper,
+                                         Supplier<T> defaultValue) {
                 bindGetter(chr, name, desc,
                         value -> Optional.ofNullable(value)
-                            .map(v -> applyOrThrow(v, chr, name, mapper))
-                            .orElseGet(defaultValue));
+                                .map(v -> applyOrThrow(v, chr, name, mapper))
+                                .orElseGet(defaultValue));
                 return this;
             }
 
@@ -231,7 +247,7 @@ public class Argumentz {
 
             @Override
             public Builder withParam(char chr, String name, String desc) {
-                bindGetter(chr, name, desc, IDENTITY);
+                bindGetter(chr, name, desc, ID);
                 return this;
             }
 
